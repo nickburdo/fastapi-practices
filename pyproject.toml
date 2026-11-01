@@ -1,0 +1,7 @@
+[tool.ruff]
+line-length = 88
+extend-exclude = ["docs"]
+
+[tool.ruff.lint]
+extend-select = ["I"]
+unfixable = ["F401"]

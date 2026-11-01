@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+
+# Tools
+.ruff_cache/
+
+# Local settings and data
+.env
+books.db
+
+# IDE
+.idea/
