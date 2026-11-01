@@ -1,6 +1,9 @@
+from collections.abc import Sequence
+
 from fastapi import APIRouter, status
 
 from books import services
+from books.models import BookModel
 from books.schemas import BookCreateSchema, BookSchema
 from shared.database.session import SessionDep
 
@@ -8,7 +11,7 @@ book_router = APIRouter(prefix="/books", tags=["Books"])
 
 
 @book_router.get("/", summary="List of books", response_model=list[BookSchema])
-async def read_books(session: SessionDep):
+async def read_books(session: SessionDep) -> Sequence[BookModel]:
     return await services.get_books(session=session)
 
 
@@ -27,5 +30,5 @@ async def read_books(session: SessionDep):
     response_model=BookSchema,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_book(data: BookCreateSchema, session: SessionDep):
+async def create_book(data: BookCreateSchema, session: SessionDep) -> BookModel:
     return await services.add_book(data=data, session=session)
