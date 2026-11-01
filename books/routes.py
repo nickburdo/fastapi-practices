@@ -1,8 +1,10 @@
 from collections.abc import Sequence
+from typing import Annotated
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, Path, status
 
 from books import services
+from books.exceptions import BookNotFoundError
 from books.models import BookModel
 from books.schemas import BookCreateSchema, BookSchema
 from shared.database.session import SessionDep
@@ -15,13 +17,21 @@ async def read_books(session: SessionDep) -> Sequence[BookModel]:
     return await services.get_books(session=session)
 
 
-# @app.get("/{book_id}", summary="Get a book by ID")
-# def read_book(book_id: int):
-#     for book in books:
-#         if book["id"] == book_id:
-#             return book
-#     raise HTTPException(status_code=404, detail="Book not found")
-#
+@book_router.get(
+    "/{book_id}",
+    summary="Get a book by ID",
+    response_model=BookSchema,
+    responses={404: {"description": "Book not found"}},
+)
+async def read_book(
+    book_id: Annotated[int, Path(gt=0)], session: SessionDep
+) -> BookModel:
+    try:
+        return await services.get_book(book_id=book_id, session=session)
+    except BookNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found"
+        ) from None
 
 
 @book_router.post(
