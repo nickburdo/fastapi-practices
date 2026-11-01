@@ -1,15 +1,19 @@
 # План: исправления по код-ревью после рефакторинга
 
-**Статус:** утверждён (2026-11-01), включая предложения C5–C10.
-Этап 1 **выполнен в плане `uv-migration-plan.md`** (2026-11-01). **Продолжение — с этапа 0, затем этапы 2–6** (R1).
+**Статус:** выполнен (2026-11-01). Утверждён 2026-11-01, включая предложения C5–C10.
+Этап 1 выполнен в плане `uv-migration-plan.md`; этапы 0, 2–6 — пользователем (проверки этапа 6 пройдены,
+Ruff без замечаний); этап 7 — Claude. Отклонение по коммитам — см. R4.
 
 ## Журнал ревизий
 
 | # | Дата | Изменение |
 |---|---|---|
 | R1 | 2026-11-01 | Переход на uv: этап 1 закрыт планом `uv-migration-plan.md`; C1, C2, C5 заменены решениями U1–U4 (C6, C7 сохранены). Проект под git: добавлены этап 0 (ветка `chore/review-cleanup`) и этап 7 (коммит и слияние в `main`) |
+| R2 | 2026-11-01 | Удалено содержимое этапа 1 (шаги на pip) и заметка о проверке C1 через pip — вводили в заблуждение после перехода на uv. В шапке pip заменён на uv |
+| R3 | 2026-11-01 | Коммиты по этапам (решение пользователя): шаг 0.2 — коммит правок плана; шаги 2.2, 3.2, 4.4, 5.4 — коммит после каждого этапа; этап 7 — только отметка о выполнении и слияние в `main` после всего плана |
+| R4 | 2026-11-01 | Отклонение при выполнении (принято пользователем, вариант A): изменения этапа 2 попали в коммит этапа 3 (`Order books by id`) — отдельного коммита 2.2 нет; историю не переписывали. Перевод строки в конце `.env.example` (требование 2.1) добавлен отдельным коммитом |
 **Исполнитель реализации:** пользователь
-**Версии:** Python 3.15.1, pip 26.0.1, FastAPI 0.162.0, Pydantic 2.14.2, pydantic-settings 2.16.2,
+**Версии:** Python 3.15.1, uv 0.13.5, FastAPI 0.162.0, Pydantic 2.14.2, pydantic-settings 2.16.2,
 SQLAlchemy 2.1.6, aiosqlite 0.22.1, Ruff 0.17.3
 
 ## Цель
@@ -42,9 +46,6 @@ C1–C4 — ответы пользователя на вопросы; C5–C10 
 | C9 | Разделение схем | Общая `BookBaseSchema` без ограничений; ограничения длины — только в `BookCreateSchema`; `BookSchema` наследует `BookBaseSchema` | предложение — можно возразить |
 | C10 | Тип возврата эндпоинтов | Реальный тип (`Sequence[BookModel]`, `BookModel`), `response_model` остаётся — по документации FastAPI он в приоритете над аннотацией | предложение — можно возразить |
 
-> C1 проверено на временной копии: `pip install --group app --group dev --dry-run` — все пакеты
-> `Requirement already satisfied`. Требуется pip ≥ 25.1 (установлен 26.0.1).
->
 > C9, C10 проверены на временной базе: при пустом `title` и `title` из 300 символов в БД
 > `GET /books/` отдаёт `200`; `POST` с пустым `title` — по-прежнему `422`;
 > в OpenAPI ограничения длины видны только у `BookCreateSchema`.
@@ -61,53 +62,21 @@ git status
 git switch -c chore/review-cleanup
 ```
 
-## Этап 1. Зависимости (`pyproject.toml`) — ВЫПОЛНЕН в плане `uv-migration-plan.md`, не выполнять
-
-> Оставлен для истории. Зависимости уже записаны через uv (`[project].dependencies`, группа `dev`, `uv.lock`).
-
-> **Проблема.** Пакеты, нужные проекту (FastAPI, SQLAlchemy и др.), есть только в `.venv`,
-> но нигде не записано, какие именно и каких версий. Удалили `.venv`, перешли на другой компьютер,
-> передали проект коллеге — придётся угадывать; новые версии могут работать иначе.
->
-> **Что делаем.** Записываем в `pyproject.toml` список пакетов с точными версиями, которые сейчас работают.
-> Две группы: `app` — без чего не запустится сервер; `dev` — инструменты разработчика (Ruff).
->
-> **Результат.** Окружение собирается одной командой и получается точно таким же, как сейчас.
-
-**1.1.** Добавить в **начало** `pyproject.toml` (перед `[tool.ruff]`) группы зависимостей:
-
-```toml
-[dependency-groups]
-app = [
-    "aiosqlite==0.22.1",
-    "fastapi[standard]==0.162.0",
-    "pydantic-settings==2.16.2",
-    "sqlalchemy[asyncio]==2.1.6",
-]
-dev = [
-    "ruff==0.17.3",
-]
-```
-
-Секции `[tool.ruff]` и `[tool.ruff.lint]` не менять.
-
-**1.2.** Проверить установку из терминала (корень проекта, активированный `.venv`).
-На текущем окружении pip ничего не скачивает — только подтверждает:
+**0.2.** Закоммитить правки этого плана (ревизии R1–R3) отдельным коммитом (R3):
 
 ```
-pip install --group app --group dev
+git add docs/plans/review-cleanup-plan.md
+git commit -m "Update cleanup plan for uv and per-stage commits"
 ```
 
-Ожидаемо: все строки `Requirement already satisfied`, строки `Successfully installed` нет.
+> **Порядок коммитов (R3).** Каждый этап 2–5 завершается своим коммитом; слияние в `main` —
+> только после выполнения всего плана (этап 7). Перед коммитом — `git status`: в коммит должны
+> попасть только файлы этого этапа.
 
-**1.3.** Как ставить зависимости в новое окружение (для справки, сейчас не выполнять):
+## Этап 1. Зависимости — выполнен в плане `uv-migration-plan.md`
 
-```
-python -m venv .venv
-source .venv/Scripts/activate
-python -m pip install --upgrade pip
-pip install --group app --group dev
-```
+Выполнен в плане `uv-migration-plan.md`. Исходные шаги на pip удалены (R2) — они есть в истории git.
+Как ставить и удалять пакеты теперь — этап 5 плана `uv-migration-plan.md` (`uv add`, `uv remove`, `uv sync`).
 
 ## Этап 2. Образец настроек (`.env.example`)
 
@@ -125,6 +94,13 @@ pip install --group app --group dev
 # DATABASE_URL=sqlite+aiosqlite:///C:/absolute/path/to/books.db
 ```
 
+**2.2.** Коммит этапа:
+
+```
+git add .env.example
+git commit -m "Clarify DATABASE_URL in .env.example"
+```
+
 ## Этап 3. Порядок списка книг (`books/repositories.py`)
 
 > **Проблема.** `GET /books/` просит у базы «все книги», но не говорит, в каком порядке.
@@ -137,6 +113,13 @@ pip install --group app --group dev
 
 ```python
     query = select(BookModel).order_by(BookModel.id)
+```
+
+**3.2.** Коммит этапа:
+
+```
+git add books/repositories.py
+git commit -m "Order books by id"
 ```
 
 ## Этап 4. Схемы (`books/schemas.py`)
@@ -180,6 +163,13 @@ class BookSchema(BookBaseSchema):
 
 Импорты файла не меняются.
 
+**4.4.** Коммит этапа:
+
+```
+git add books/schemas.py
+git commit -m "Validate book field length on input only"
+```
+
 ## Этап 5. Аннотации возврата эндпоинтов (`books/routes.py`)
 
 > **Проблема.** У функций сервиса и репозитория указано, что они возвращают (`-> BookModel`),
@@ -211,6 +201,13 @@ async def create_book(data: BookCreateSchema, session: SessionDep) -> BookModel:
 
 `response_model` в декораторах **не убирать** — он задаёт схему ответа (C10).
 
+**5.4.** Коммит этапа:
+
+```
+git add books/routes.py
+git commit -m "Add return types to book endpoints"
+```
+
 ## Этап 6. Проверка (вручную, через `/docs`)
 
 > Убеждаемся, что книги создаются, неправильные данные отклоняются, список отсортирован,
@@ -231,19 +228,23 @@ ruff format --check
 
 **6.5.** В `/docs` → Schemas: у `BookCreateSchema` есть `maxLength`/`minLength`, у `BookSchema` — нет.
 
-## Этап 7. Коммит и слияние в `main` (R1)
+## Этап 7. Слияние в `main` (R1, R3)
 
-**7.1.** Проверить, что попадёт в коммит:
+**7.1.** Все этапы закоммичены — незакоммиченных изменений нет
+(`nothing to commit, working tree clean`); в истории ветки — коммиты этапов 0.2, 2.2, 3.2, 4.4, 5.4:
 
 ```
 git status
+git log --oneline main..chore/review-cleanup
 ```
 
-**7.2.** Закоммитить:
+Если после проверки этапа 6 что-то исправлялось — сначала закоммитить исправление отдельным коммитом.
+
+**7.2.** Отметить план выполненным (делает Claude) и закоммитить:
 
 ```
-git add .
-git commit -m "Apply code review fixes: env example, ordering, schemas, return types"
+git add docs/plans/review-cleanup-plan.md
+git commit -m "Mark cleanup plan as done"
 ```
 
 **7.3.** Влить ветку в `main` и удалить её:

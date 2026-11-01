@@ -7,7 +7,7 @@ from books.models import BookModel
 
 
 async def get_all_books(session: AsyncSession) -> Sequence[BookModel]:
-    query = select(BookModel)
+    query = select(BookModel).order_by(BookModel.id)
     result = await session.execute(query)
     return result.scalars().all()
 
