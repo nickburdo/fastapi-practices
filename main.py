@@ -1,7 +1,10 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timedelta
 
-from fastapi import FastAPI
+from authx import AuthX, AuthXConfig
+from fastapi import Depends, FastAPI, HTTPException, Response
+from pydantic import BaseModel
 
 from books.routes import book_router
 from shared.database.session import engine
@@ -13,7 +16,37 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await engine.dispose()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, swagger_ui_parameters={"persistAuthorization": True})
+
+# Configure AuthX
+config = AuthXConfig(
+    JWT_SECRET_KEY="your-secret-key",  # Change this in production!
+    JWT_TOKEN_LOCATION=["cookies"],
+    JWT_ACCESS_COOKIE_NAME="access_token",
+    JWT_ACCESS_TOKEN_EXPIRES=timedelta(hours=10),
+)
+
+auth = AuthX(config=config)
+auth.handle_errors(app)  # Register error handlers for proper responses
+
+
+class UserLoginSchema(BaseModel):
+    username: str
+    password: str
+
+
+@app.post("/login", tags=["Authentication555"])
+def login(data: UserLoginSchema, response: Response):
+    if data.username == "test" and data.password == "test":
+        token = auth.create_access_token(uid=data.username)
+        response.set_cookie(key="access_token", value=token, httponly=True)
+        return {"access_token": token}
+    raise HTTPException(401, detail="Invalid credentials")
+
+
+@app.get("/protected", dependencies=[Depends(auth.access_token_required)])
+def protected():
+    return {"message": "Hello, FastAPI World"}
 
 
 app.include_router(book_router)
