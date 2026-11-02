@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import current_user
 
 from users import repositories
 from users.exceptions import (
@@ -56,7 +55,9 @@ async def authenticate_user(
     return user
 
 
-async def delete_user(user_id: int, session: AsyncSession) -> None:
+async def delete_user(
+    user_id: int, current_user: UserModel, session: AsyncSession
+) -> None:
     if user_id == current_user.id:
         raise SelfDeletionError(user_id)
     user = await get_user(user_id=user_id, session=session)

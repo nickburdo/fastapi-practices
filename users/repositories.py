@@ -30,6 +30,6 @@ async def add_user(new_user: UserModel, session: AsyncSession) -> UserModel:
     return new_user
 
 
-async def delete_user(user: UserModel, sesion: AsyncSession) -> None:
-    await sesion.delete(user)
-    await sesion.flush()
+async def delete_user(user: UserModel, session: AsyncSession) -> None:
+    await session.delete(user)
+    await session.flush()
