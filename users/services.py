@@ -10,7 +10,7 @@ from users.exceptions import (
     UserNotFoundError,
 )
 from users.models import UserModel
-from users.schema import UserCredentialsSchema
+from users.schemas import UserCredentialsSchema
 from users.security import DUMMY_HASH, hash_password, verify_password
 
 

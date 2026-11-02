@@ -1,8 +1,7 @@
 from typing import Annotated
 
 from authx import TokenPayload
-from fastapi import Depends, HTTPException
-from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from fastapi import Depends, HTTPException, status
 
 from shared.auth import auth
 from shared.database.session import SessionDep
@@ -16,7 +15,7 @@ async def get_current_user(
     session: SessionDep,
 ) -> UserModel:
     unauthorized = HTTPException(
-        status_code=HTTP_401_UNAUTHORIZED, detail="User not found"
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
     )
     try:
         user_id = int(payload.sub)
@@ -35,7 +34,7 @@ CurrentUserDep = Annotated[UserModel, Depends(get_current_user)]
 async def get_current_admin(current_user: CurrentUserDep) -> UserModel:
     if not current_user.is_admin:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="User is not an admin"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin rights required"
         )
     return current_user
 

@@ -14,7 +14,7 @@ from users.exceptions import (
     UserNotFoundError,
 )
 from users.models import UserModel
-from users.schema import TokenSchema, UserCredentialsSchema, UserSchema
+from users.schemas import TokenSchema, UserCredentialsSchema, UserSchema
 
 auth_router = APIRouter(prefix="/auth", tags=["Auth"])
 users_router = APIRouter(
@@ -63,7 +63,7 @@ async def login(data: UserCredentialsSchema, session: SessionDep) -> TokenSchema
     summary="List of users",
     response_model=list[UserSchema],
 )
-async def read_user(session: SessionDep) -> Sequence[UserModel]:
+async def read_users(session: SessionDep) -> Sequence[UserModel]:
     return await services.get_users(session=session)
 
 
