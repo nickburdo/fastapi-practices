@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException, Response
 from pydantic import BaseModel
 
 from books.routes import book_router
-from shared import auth
+from shared.auth import auth
 from shared.database.session import engine
 
 
