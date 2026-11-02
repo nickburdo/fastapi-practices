@@ -1,15 +1,18 @@
 from collections.abc import Sequence
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from books import services
 from books.exceptions import BookNotFoundError
 from books.models import BookModel
 from books.schemas import BookCreateSchema, BookSchema
 from shared.database.session import SessionDep
+from users.dependencies import get_current_user
 
-book_router = APIRouter(prefix="/books", tags=["Books"])
+book_router = APIRouter(
+    prefix="/books", tags=["Books"], dependencies=[Depends(get_current_user)]
+)
 
 
 @book_router.get("/", summary="List of books", response_model=list[BookSchema])

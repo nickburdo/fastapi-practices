@@ -12,6 +12,8 @@
 | База данных | SQLite через драйвер `aiosqlite` |
 | Миграции | Alembic (async-шаблон `pyproject_async`) |
 | Настройки | pydantic-settings (файл `.env`) |
+| Аутентификация | authx (JWT в заголовке `Authorization: Bearer`) |
+| Хэширование паролей | pwdlib (Argon2) |
 | Пакеты и окружение | uv |
 | Линтер и форматтер | Ruff (dev-зависимость) |
 
@@ -20,7 +22,9 @@
 ```
 main.py              # приложение FastAPI, подключение роутеров
 books/               # модуль книг: models, schemas, repositories, services, routes
-shared/config.py     # настройки (DATABASE_URL)
+users/               # модуль пользователей: models, schemas, security, repositories, services, dependencies, routes
+shared/auth.py       # настройка authx (JWT в заголовке, 30 минут)
+shared/config.py     # настройки (DATABASE_URL, JWT_SECRET_KEY)
 shared/database/     # Base для моделей, движок и сессия
 migrations/          # Alembic: env.py и versions/
 docs/plans/          # планы реализации
@@ -34,19 +38,24 @@ docs/plans/          # планы реализации
    uv sync
    ```
 
-2. (Необязательно) Настройки. По умолчанию база — `books.db` в корне проекта.
-   Чтобы указать другую, скопируйте `.env.example` в `.env` и задайте `DATABASE_URL`
-   (абсолютный путь):
+2. Настройки. Скопируйте `.env.example` в `.env` и задайте `JWT_SECRET_KEY` (обязательно,
+   не короче 32 символов):
 
    ```bash
    cp .env.example .env
+   uv run python -c "import secrets; print(secrets.token_hex(32))"
    ```
+
+   Вставьте напечатанный ключ после `JWT_SECRET_KEY=`. Там же при желании можно задать
+   `DATABASE_URL` (абсолютный путь); по умолчанию база — `books.db` в корне проекта.
 
 3. Создать / обновить схему базы (сервер сам таблицы не создаёт):
 
    ```bash
    uv run alembic upgrade head
    ```
+
+   Миграции создают админа: логин `admin`, пароль `admin`.
 
 4. Запустить сервер разработки с автоперезагрузкой:
 
@@ -60,9 +69,18 @@ API: http://127.0.0.1:8000, документация Swagger: http://127.0.0.1:8
 
 | Метод | Путь | Описание |
 |---|---|---|
-| GET | `/books/` | Список книг |
-| GET | `/books/{book_id}` | Книга по ID (404, если нет) |
-| POST | `/books/` | Создать книгу |
+| POST | `/auth/register` | Регистрация, возвращает токен (409, если имя занято) |
+| POST | `/auth/login` | Вход, возвращает токен (401 при неверных данных) |
+| GET | `/users/` | Список пользователей* |
+| GET | `/users/me` | Текущий пользователь* |
+| DELETE | `/users/{user_id}` | Удалить пользователя, только админ* (403 не админу, 400 при удалении себя, 404 если нет) |
+| GET | `/books/` | Список книг* |
+| GET | `/books/{book_id}` | Книга по ID (404, если нет)* |
+| POST | `/books/` | Создать книгу* |
+
+\* Нужен токен в заголовке `Authorization: Bearer <токен>`. Без него или если пользователь удалён — 401.
+Токен живёт 30 минут, потом нужно войти заново. В `/docs`: выполнить `POST /auth/login`, скопировать
+`access_token` из ответа и вставить в **Authorize** (токен сохраняется после перезагрузки страницы).
 
 > Зависимости добавляются только через uv: `uv add <пакет>` / `uv add --dev <пакет>`,
 > не через `pip install`. На Windows перед `uv add` / `uv sync` остановите сервер —
