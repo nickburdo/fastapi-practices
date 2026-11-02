@@ -1,12 +1,11 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timedelta
 
-from authx import AuthX, AuthXConfig
 from fastapi import Depends, FastAPI, HTTPException, Response
 from pydantic import BaseModel
 
 from books.routes import book_router
+from shared import auth
 from shared.database.session import engine
 
 
@@ -18,15 +17,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(lifespan=lifespan, swagger_ui_parameters={"persistAuthorization": True})
 
-# Configure AuthX
-config = AuthXConfig(
-    JWT_SECRET_KEY="your-secret-key",  # Change this in production!
-    JWT_TOKEN_LOCATION=["cookies"],
-    JWT_ACCESS_COOKIE_NAME="access_token",
-    JWT_ACCESS_TOKEN_EXPIRES=timedelta(hours=10),
-)
-
-auth = AuthX(config=config)
 auth.handle_errors(app)  # Register error handlers for proper responses
 
 
