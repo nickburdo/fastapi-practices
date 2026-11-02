@@ -1,12 +1,12 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Response
-from pydantic import BaseModel
+from fastapi import FastAPI
 
 from books.routes import book_router
 from shared.auth import auth
 from shared.database.session import engine
+from users.routes import auth_router, users_router
 
 
 @asynccontextmanager
@@ -20,25 +20,8 @@ app = FastAPI(lifespan=lifespan, swagger_ui_parameters={"persistAuthorization": 
 auth.handle_errors(app)  # Register error handlers for proper responses
 
 
-class UserLoginSchema(BaseModel):
-    username: str
-    password: str
-
-
-@app.post("/login", tags=["Authentication555"])
-def login(data: UserLoginSchema, response: Response):
-    if data.username == "test" and data.password == "test":
-        token = auth.create_access_token(uid=data.username)
-        response.set_cookie(key="access_token", value=token, httponly=True)
-        return {"access_token": token}
-    raise HTTPException(401, detail="Invalid credentials")
-
-
-@app.get("/protected", dependencies=[Depends(auth.access_token_required)])
-def protected():
-    return {"message": "Hello, FastAPI World"}
-
-
+app.include_router(auth_router)
+app.include_router(users_router)
 app.include_router(book_router)
 
 
