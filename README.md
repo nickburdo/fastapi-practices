@@ -22,9 +22,10 @@
 ```
 main.py              # приложение FastAPI, подключение роутеров
 books/               # модуль книг: models, schemas, repositories, services, routes
+files/               # модуль файлов: models, schemas, validation, storage, repositories, services, routes
 users/               # модуль пользователей: models, schemas, security, repositories, services, dependencies, routes
 shared/auth.py       # настройка authx (JWT в заголовке, 30 минут)
-shared/config.py     # настройки (DATABASE_URL, JWT_SECRET_KEY)
+shared/config.py     # настройки (DATABASE_URL, JWT_SECRET_KEY, папка и лимиты загрузок)
 shared/database/     # Base для моделей, движок и сессия
 migrations/          # Alembic: env.py и versions/
 docs/plans/          # планы реализации
@@ -77,6 +78,14 @@ API: http://127.0.0.1:8000, документация Swagger: http://127.0.0.1:8
 | GET | `/books/` | Список книг* |
 | GET | `/books/{book_id}` | Книга по ID (404, если нет)* |
 | POST | `/books/` | Создать книгу* |
+| POST | `/files/` | Загрузить 1–10 файлов* (400 / 413 / 415 при нарушении ограничений) |
+| GET | `/files/` | Список своих файлов, админу — всех* |
+| GET | `/files/{file_id}` | Скачать файл под исходным именем* (404, если нет или чужой) |
+| DELETE | `/files/{file_id}` | Удалить файл: свой, админу — любой* (404, если нет или чужой) |
+
+Загрузка файлов: до 10 файлов за запрос, до 10 МБ каждый (`MAX_FILES_PER_UPLOAD`, `MAX_UPLOAD_SIZE`).
+Разрешены `.jpg .jpeg .png .webp .gif .pdf .txt .docx .xlsx`; Content-Type файла должен соответствовать
+расширению. Файлы хранятся в `uploads/` (`UPLOAD_DIR`) под случайными именами.
 
 \* Нужен токен в заголовке `Authorization: Bearer <токен>`. Без него или если пользователь удалён — 401.
 Токен живёт 30 минут, потом нужно войти заново. В `/docs`: выполнить `POST /auth/login`, скопировать
