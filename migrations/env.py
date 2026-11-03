@@ -7,6 +7,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 import books.models  # noqa: F401 (registers models in Base.metadata)
+import files.models  # noqa: F401 (registers models in Base.metadata)
 import users.models  # noqa: F401 (registers models in Base.metadata)
 from shared.config import settings
 from shared.database.models import Base
