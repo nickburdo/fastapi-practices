@@ -14,3 +14,6 @@ books.db
 
 # IDE
 .idea/
+
+# Uploaded files
+uploads/
