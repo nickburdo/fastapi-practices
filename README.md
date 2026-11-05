@@ -201,3 +201,7 @@ Swagger: http://localhost:8000/docs. Остановка — `Ctrl+C`, затем
 uv run ruff check .
 uv run ruff format .
 ```
+
+## Полезные ссылки
+
+- [FastAPI Best Practices](https://github.com/zhanymkanov/fastapi-best-practices) — соглашения и практики для FastAPI-проектов
