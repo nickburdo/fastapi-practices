@@ -143,6 +143,58 @@ uv run alembic downgrade -1 # откатить последнюю миграци
 uv run alembic downgrade base  # откатить всё
 ```
 
+## Запуск в Docker
+
+Образ собирается по `Dockerfile` (Python 3.15.1, uv 0.13.5), параметры запуска — в
+`docker-compose.yaml` (сервис `api`). В образ **не попадают** секреты и данные
+(см. `.dockerignore`), они подключаются при запуске:
+
+| Что | Как попадает в контейнер |
+|---|---|
+| `.env` (`JWT_SECRET_KEY` и др.) | `env_file: .env` — значения передаются как переменные окружения |
+| `books.db` | bind mount `./books.db:/app/books.db` — контейнер работает с файлом проекта |
+| `uploads/` | bind mount `./uploads:/app/uploads` |
+
+### Первый запуск
+
+1. Создайте `.env` (см. раздел «Запуск», шаг 2) — без него контейнер не стартует.
+2. Если `books.db` ещё нет — создайте пустой файл. Иначе Docker создаст на его месте
+   **папку** `books.db`, и приложение не запустится:
+
+   ```powershell
+   New-Item books.db
+   ```
+
+3. Примените миграции (одноразовый контейнер, удаляется после выполнения):
+
+   ```bash
+   docker compose run --rm api alembic upgrade head
+   ```
+
+4. Запустите:
+
+   ```bash
+   docker compose up --build
+   ```
+
+Swagger: http://localhost:8000/docs. Остановка — `Ctrl+C`, затем `docker compose down`.
+
+### Шпаргалка
+
+| Ситуация | Команды |
+|---|---|
+| Обычный запуск | `docker compose up --build` |
+| Запуск в фоне | `docker compose up -d --build` |
+| Появилась новая миграция | `docker compose build` → `docker compose run --rm api alembic upgrade head` → `docker compose up -d` |
+| Текущая версия базы | `docker compose run --rm api alembic current` |
+| Остановить и удалить контейнер | `docker compose down` |
+
+> Образ — снимок кода на момент сборки: после изменений в коде или зависимостях
+> нужна пересборка (`--build`). Новые миграции создаются локально
+> (`uv run alembic revision --autogenerate ...`), в контейнере их только применяют —
+> через `docker compose run` с новым образом, а не через `docker compose exec`
+> в уже работающем контейнере (в старом образе новой миграции нет).
+
 ## Линтер и форматирование
 
 ```bash
